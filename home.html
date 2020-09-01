@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>悅緣四季訂貨平台</title>
+    <link rel="stylesheet" href="css/vant_Index_v2.8.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="font/iconfont.css">
+    <link rel="stylesheet" href="css/home.css">
+</head>
+<style>
+    .booking-enter {
+        background-image: url(images/booking.png);
+        background-size: cover;
+        display: block;
+        width: 100%;
+        height: 2.7rem;
+    }
+
+    .list-title {
+        font-size: 0.32rem;
+        font-weight: bolder;
+        border-bottom: 1px solid #dcdddd;
+        line-height: 0.4rem;
+        padding: 0.2rem;
+        margin-top: 0.2rem;
+        color: #898989;
+    }
+</style>
+
+<body class="bg">
+    <div id="app">
+
+        <div class="content">
+
+            <a href="user.html" class="iconfont user-enter icon-geren"></a>
+            <!-- indicator-color="#ba843a" -->
+            <van-swipe class="banner" :autoplay='3000' indicator-color="#000" lazy-render="true">
+                <van-swipe-item v-for="(banner,index) in bannerImgs" :key="index">
+                    <img v-lazy="banner" class="banner-img">
+                </van-swipe-item>
+            </van-swipe>
+
+            <div class="notice-p" hidden>
+                <van-notice-bar scrollable speed="30" color="#f00" background="#efefef"
+                    text="公告：椰子雞目前剩餘庫存50隻；可接受預約，預約剩餘庫存100隻。" />
+            </div>
+
+            <a href="choosedate.html" class="booking-enter"></a>
+
+            <div class="list-wrap">
+                <p class="list-title">其他特色商品</p>
+                <div class="list-item" v-for="(item,index) in productList" :key='index'>
+                    <div class="list-item-main">
+                        <img v-lazy="item.img" class="lim-img">
+                        <div class="lim-inner">
+                            <p class="lim-name one-txt-cut">{{item.name}}</p>
+                            <p class="lim-intro one-txt-cut">{{item.intro}}</p>
+                            <div class="lim-func">
+                                <span class="lim-price">${{item.price}}</span>
+
+                                <!-- 售罄 1 -->
+                                <div class="lim-fun-right lim-sold-out" v-if="item.state == 1">
+                                    <span class="lim-sold-out-txt">售罄</span>
+                                    <i class="iconfont icon-jia"></i>
+                                </div>
+                                <!-- 詳情 -->
+                                <div class="lim-fun-right add-cart" v-else-if="item.state == 2">
+                                    <i class="iconfont icon-jia" @click="openDetail(index)"></i>
+                                </div>
+                                <!-- 已添加 -->
+                                <div class="lim-fun-right" v-else-if="item.state == 3">
+                                    <van-stepper v-model="item.stepVal" theme="round" button-size="26" async-change
+                                        @plus="openDetail(index)" @minus="minStep(index)"
+                                        @overlimit="changeState(index)" disable-input />
+                                </div>
+                                <!-- 預約 -->
+                                <div class="lim-fun-right" v-else-if="item.state == 4">
+                                    <span class="booking-txt">預約</span>
+                                    <van-stepper v-model="item.stepVal" theme="round" button-size="26" disable-input />
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="fixed-bot-part" v-show="!detailStu">
+                <div class="fixed-bot">
+                    <div class="fixed-bot-left">
+                        <!-- iconfont icon-canyin  -->
+                        <i class="canyin-icon" @click="cartStu = !cartStu">
+                            <span class="canyin-count">{{cartList.length}}</span>
+                        </i>
+                        合計：<span class="total">$1534</span>
+                    </div>
+                    <button class="fixed-bot-right iconfont" @click="window.location.href='confirm.html'">選好了</button>
+                </div>
+            </div>
+
+            <div class="detail-pop"></div>
+
+        </div>
+        <!-- 購物車 -->
+        <van-action-sheet v-model="cartStu">
+            <div class="cart-content">
+                <div class="cart-top">
+                    <span>已選商品 (*左滑出現刪除按鈕)</span>
+                    <span class="clear-cart fr iconfont" @click="clearCart">清空</span>
+                </div>
+
+                <p class="cart-empty" v-if="cartList == ''">無已選商品</p>
+
+                <div class="cart-list">
+
+                    <div class="cart-item" v-for="(item,index) in cartList">
+                        <van-swipe-cell>
+                            <div class="list-item">
+                                <div class="list-item-main">
+                                    <img v-lazy="item.img" class="lim-img">
+                                    <div class="lim-inner">
+                                        <p class="lim-name one-txt-cut">{{item.name}}</p>
+                                        <p class="lim-intro one-txt-cut">{{item.intro}}</p>
+                                        <div class="lim-func">
+                                            <span class="lim-price">${{item.price}}</span>
+                                            <div class="lim-fun-right">
+                                                <van-stepper v-model="item.stepVal" theme="round" button-size="26"
+                                                    disable-input />
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="list-bot-item" v-for="(cartItem,index) in item.innerList">
+                                    <div class="lbi-left">
+                                        <img v-lazy="cartItem.iImg" class="lbi-img">
+                                        <span class="lbi-name one-txt-cut">{{cartItem.iName}}</span>
+                                    </div>
+                                    <div class="lim-fun-right">
+                                        <span class="lbi-right">${{cartItem.iPrice}}</span>
+                                        <van-stepper v-model="cartItem.iStep" theme="round" button-size="26"
+                                            disable-input />
+                                    </div>
+                                </div>
+                            </div>
+                            <template #right>
+                                <button class="cart-item-del iconfont icon-shanchu" @click="delItem(index)"></button>
+                            </template>
+                        </van-swipe-cell>
+                    </div>
+                </div>
+
+            </div>
+        </van-action-sheet>
+        <!-- 詳情彈框 -->
+        <van-action-sheet v-model="detailStu" get-container=".detail-pop" lock-scroll="false">
+            <div class="detail-content">
+                <div class="detail-infor">
+                    <img v-lazy="detailAct.img" class="detail-img">
+                    <div class="detail-infor-inner">
+                        <p class="detail-name">{{detailAct.name}}</p>
+                        <p class="detail-price">${{detailAct.price}}</p>
+                    </div>
+                    <div class="detail-stepper lim-fun-right">
+                        <!-- detailAct.stepVal -->
+                        <van-stepper :value="stepperVal" theme="round" button-size="26" async-change disable-input
+                            @change="test" />
+                    </div>
+                </div>
+
+                <p class="detail-intro">{{detailAct.intro}}</p>
+
+                <p class="detail-title">加料專區</p>
+
+                <div class="detail-lbi-wrap">
+                    <div class="list-bot-item" v-for="(inner,index) in detailAct.innerList" :key="index">
+                        <div class="lbi-left">
+                            <img v-lazy="inner.iImg" class="lbi-img">
+                            <span
+                                class="lbi-name one-txt-cut">{{inner.iName}}{{inner.iName}}{{inner.iName}}{{inner.iName}}</span>
+                        </div>
+
+                        <div class="lim-fun-right lim-sold-out" v-if="inner.iState == 1">
+                            <span class="lim-sold-out-txt">售罄</span>
+                            <i class="iconfont icon-jia"></i>
+                        </div>
+                        <div class="lim-fun-right" v-else-if="inner.iState == 2">
+                            <span class="lbi-right">$506.00</span>
+                            <van-stepper v-model="inner.iStep" theme="round" button-size="26" disable-input />
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="detail-btn-wrap">
+                    <button class="detail-btn" @click="detailStu = false">取消</button>
+                    <button class="detail-btn" @click="detailAdd">選好要求</button>
+                </div>
+
+            </div>
+        </van-action-sheet>
+    </div>
+
+    <script src="js/vue.min.js"></script>
+    <script src="js/vant.v2.8.min.js"></script>
+    <script src="js/vue-lazyload.js"></script>
+    <script src="js/ydui.flexible.js"></script>
+
+    <script>
+        Vue.use(VueLazyload)
+
+        new Vue({
+            el: '#app',
+            data: {
+                testStu: true,
+                stepperVal: 2,//測試計步器，可刪
+
+                detailStu: false, //詳情彈窗狀態
+                cartStu: false, //購物車彈窗狀態
+                bannerImgs: [ //輪播圖
+                    'images/banner.png', 'images/banner1.png', 'images/product.png',
+                ],
+                // 詳情
+                detailAct: [],
+                // 購物車列表
+                cartList: [
+                    {
+                        name: '名稱名稱1111',
+                        price: '1333',
+                        state: 2,
+                        intro: '簡介簡介簡介',
+                        img: 'images/product.png',
+                        stepVal: 3,
+                        innerList: [{
+                            iName: '名稱名稱1111',
+                            iPrice: '1232',
+                            iImg: 'images/product.png',
+                            iStep: 0,
+                            iState: 1,
+                        }, {
+                            iName: '名稱名稱444名稱名稱444名稱名稱444',
+                            iPrice: '1232',
+                            iImg: 'images/product.png',
+                            iStep: 1,
+                            iState: 2,
+                        }]
+                    }, {
+                        name: '名稱名稱1111',
+                        price: '1333',
+                        state: 2,
+                        intro: '簡介簡介簡介',
+                        img: 'images/product.png',
+                        stepVal: 3,
+                        innerList: [{
+                            iName: '名稱名稱1111',
+                            iPrice: '1232',
+                            iImg: 'images/product.png',
+                            iStep: 0,
+                            iState: 1,
+                        }, {
+                            iName: '名稱名稱444名稱名稱444名稱名稱444',
+                            iPrice: '1232',
+                            iImg: 'images/product.png',
+                            iStep: 1,
+                            iState: 2,
+                        }]
+                    }
+                ],
+                // 產品列表
+                productList: [
+                    {
+                        name: '名稱名稱2',
+                        price: '123',
+                        state: 3,//產品狀態：
+                        intro: '簡介簡介簡介',
+                        img: 'images/product.png',
+                        stepVal: 3,//產品計步器
+                        innerList: [{//加料列表
+                            iName: '名稱名稱444名稱名稱444',
+                            iPrice: '1232',//加料單個的單價
+                            iImg: 'images/product.png',
+                            iStep: 1,//加料單個的計步器值
+                            iState: 2, //加料狀態
+                        }]
+                    },
+                    {
+                        name: '名稱名稱',
+                        price: '1333',
+                        state: 1,
+                        intro: '簡介簡介簡介',
+                        img: 'images/product.png',
+                        stepVal: 3,
+                        innerList: [{
+                            iName: '名稱名稱1111',
+                            iPrice: '1232',
+                            iImg: 'images/product.png',
+                            iStep: 0,
+                            iState: 1,
+                        }, {
+                            iName: '名稱名稱444名稱名稱444名稱名稱444名稱名稱444',
+                            iPrice: '1232',
+                            iImg: 'images/product.png',
+                            iStep: 1,
+                            iState: 2,
+                        }]
+                    }, {
+                        name: '名稱名稱11111',
+                        price: '163',
+                        state: 2,
+                        intro: '簡介簡介簡介',
+                        img: 'images/product.png',
+                        stepVal: 3,
+                        innerList: [{
+                            iName: '名稱名稱1111',
+                            iPrice: '1232',
+                            iImg: 'images/product.png',
+                            iStep: 0,
+                            iState: 1,
+                        }, {
+                            iName: '名稱名稱444',
+                            iPrice: '1232',
+                            iImg: 'images/product.png',
+                            iStep: 1,
+                            iState: 2,
+                        }]
+                    }, {
+                        name: '名稱名稱3',
+                        price: '123',
+                        state: 4,
+                        intro: '簡介簡介簡介',
+                        img: 'images/product.png',
+                        stepVal: 5
+                    }
+                ],
+            },
+            methods: {
+                test(e) {
+
+                    this.$toast.loading({ forbidClick: true });
+                    console.log(e)
+                    setTimeout(() => {
+                        this.$toast.clear();
+                        console.log(e)
+                        // 注意此时修改 value 后会再次触发 change 事件
+                        this.stepperVal = e;
+                    }, 500);
+                },
+                // 打開詳情彈窗
+                openDetail(e) {
+                    this.detailStu = true;
+                    this.detailAct = this.productList[e];
+                    this.detailAct.stepVal--;
+                },
+                //詳情彈窗-添加產品
+                detailAdd() {
+                    this.detailStu = false;
+                    this.detailAct.stepVal++;
+                    // console.log(this.detailAct)
+                    // this.cartList.push(this.detailAct)
+                },
+                //計步器-減少按鈕
+                minStep(e) {
+                    this.detailAct = this.productList[e];
+                    this.detailAct.stepVal++;
+                    this.$dialog.confirm({
+                        message: '是否刪除此商品？',
+                    })
+                        .then(() => {
+                            // on confirm
+                            this.detailAct.stepVal--;
+                        })
+                        .catch(() => {
+                            // on cancel
+                        });
+                },
+                //清空購物車
+                clearCart() {
+                    this.$dialog.confirm({
+                        message: '是否清空已選商品？',
+                    })
+                        .then(() => {
+                            // on confirm
+                            this.cartList = []
+                        })
+                        .catch(() => {
+                            // on cancel
+                        });
+                },
+                //購物車單個刪除
+                delItem(e) {
+                    this.$delete(this.cartList, 0)
+                    // this.cartList.splice(e, 1);
+                    console.log(this.cartList)
+                },
+                //計步器為0，更改列表單項狀態
+                changeState(e) {
+                    this.detailAct = this.productList[e];
+                    this.$dialog.confirm({
+                        message: '是否刪除此商品？',
+                    })
+                        .then(() => {
+                            // on confirm
+                            this.$set(this.productList[e], 'state', 2);
+                            this.detailAct.stepVal--;
+                            console.log(this.detailAct.stepVal);
+                        })
+                        .catch(() => {
+                            // on cancel
+                        });
+                }
+            }
+        })
+
+    </script>
+</body>
+
+</html>
